@@ -1,4 +1,8 @@
 
+/* =========================
+📌 ELEMENTS
+========================= */
+
 const screens=document.querySelectorAll(".screen");
 
 const env=document.getElementById("envelope");
@@ -10,10 +14,10 @@ const counterEl=document.getElementById("counter");
 const fill=document.getElementById("fill");
 
 /* =========================
-📜 STATE
+📌 STATE
 ========================= */
 
-let current=0;
+let current = 0;
 
 /* =========================
 📜 QUESTIONS
@@ -36,64 +40,94 @@ screens.forEach(s=>s.classList.remove("active"));
 screens[i].classList.add("active");
 }
 
-/* 💌 OPEN */
+/* =========================
+💌 OPEN ENVELOPE
+========================= */
+
 env.addEventListener("click",()=>{
 document.getElementById("openSound")?.play();
 navigator.vibrate?.(80);
 showScreen(1);
 });
 
-/* 🚀 START */
+/* =========================
+🚀 START QUIZ (RESET FIX)
+========================= */
+
 function startQuiz(){
 
-current=0;
-answerEl.value="";
-messageEl.innerText="";
-fill.style.width="0%";
+current = 0;
+answerEl.value = "";
+messageEl.innerText = "";
+fill.style.width = "0%";
 
 showScreen(2);
 showQuestion();
 
 }
 
-/* 📜 SHOW Q */
+/* =========================
+📜 SHOW QUESTION
+========================= */
+
 function showQuestion(){
-questionEl.innerText=questions[current].q;
-counterEl.innerText=`${current+1}/5`;
-fill.style.width=(current/questions.length)*100+"%";
+questionEl.innerText = questions[current].q;
+counterEl.innerText = `سؤال ${current+1} / ${questions.length}`;
+fill.style.width = (current/questions.length)*100 + "%";
 }
 
 /* =========================
-💀 CANVAS FX (10K PARTICLES READY)
+💥 PARTICLE SYSTEM (FAST + LIGHT)
 ========================= */
 
 const canvas=document.getElementById("fxCanvas");
 const ctx=canvas.getContext("2d");
 
-canvas.width=innerWidth;
-canvas.height=innerHeight;
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 
-let particles=[];
+let particles = [];
 
-function spawnParticles(n=500){
+/* ⚡ optimized spawn (NO LAG) */
+function spawnParticles(n = 150){
+
+let isMobile = innerWidth < 768;
+
+/* تقليل تلقائي */
+if(isMobile){
+n = Math.min(n, 250);   // موبايل
+}else{
+n = Math.min(n, 600);   // كمبيوتر
+}
 
 for(let i=0;i<n;i++){
 
 particles.push({
 x:Math.random()*canvas.width,
-y:canvas.height+Math.random()*200,
-vx:(Math.random()-0.5)*2,
-vy:-(Math.random()*3+2),
-size:Math.random()*18+8,
+y:canvas.height + Math.random()*50,
+vx:(Math.random()-0.5)*1.2,
+vy:-(Math.random()*2 + 1.5),
+size:Math.random()*14 + 6,
 char:Math.random()>0.5?"❤️":"🌹",
-alpha:1
+alpha:1,
+life:Math.random()*50 + 40
 });
 
 }
 
 }
 
-function animate(){
+/* 🎥 animation loop (optimized FPS) */
+let lastTime=0;
+
+function animate(time){
+
+if(time - lastTime < 16){
+requestAnimationFrame(animate);
+return;
+}
+
+lastTime = time;
 
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
@@ -105,70 +139,77 @@ ctx.globalAlpha=p.alpha;
 ctx.font=`${p.size}px Arial`;
 ctx.fillText(p.char,p.x,p.y);
 
-p.x+=p.vx;
-p.y+=p.vy;
-p.alpha-=0.006;
+p.x += p.vx;
+p.y += p.vy;
 
-if(p.alpha<=0 || p.y<-50){
+p.alpha -= 0.015;
+p.life--;
+
+if(p.alpha <= 0 || p.life <= 0 || p.y < -50){
 particles.splice(i,1);
 i--;
 }
 
 }
 
-requestAnimationFrame(animate);
+/* memory safety */
+if(particles.length > 1000){
+particles.splice(0,300);
+}
 
+requestAnimationFrame(animate);
 }
 
 animate();
 
 /* =========================
-🧠 CHECK ANSWER
+🧠 ANSWER CHECK
 ========================= */
 
 function checkAnswer(){
 
-let val=answerEl.value.trim().toLowerCase();
+let val = answerEl.value.trim().toLowerCase();
 
-/* FINAL */
-if(current===4){
+/* 🔥 FINAL QUESTION */
+if(current === 4){
 
 showScreen(3);
 startFinal();
 
-spawnParticles(8000); // 🔥 MASS EXPLOSION
+spawnParticles(400); // 🔥 optimized final burst
 
 navigator.vibrate?.([120,50,120]);
 
 return;
 }
 
-/* NORMAL */
-if(val===questions[current].a.toLowerCase()){
+/* NORMAL QUESTIONS */
+if(val === questions[current].a.toLowerCase()){
 
-spawnParticles(1000);
+spawnParticles(120); // ⚡ lightweight burst
 
 current++;
-answerEl.value="";
-messageEl.innerText="";
+
+answerEl.value = "";
+messageEl.innerText = "";
 
 showQuestion();
 
 navigator.vibrate?.(50);
 
 }else{
-messageEl.innerText="❌ غلط";
+messageEl.innerText = "❌ غلط";
 }
 
 }
 
 /* =========================
-💌 FINAL SCENE
+💌 FINAL TYPEWRITER
 ========================= */
 
 function startFinal(){
 
-let text=`أنا مش محتاج إجابة...
+let text = `أنا مش محتاج إجابة...
 
 إنتِ الإجابة ❤️`;
 
@@ -179,14 +220,22 @@ let i=0;
 
 let t=setInterval(()=>{
 
-el.innerHTML+=text[i];
+el.innerHTML += text[i];
 i++;
 
-if(i>=text.length) clearInterval(t);
+if(i >= text.length){
+clearInterval(t);
+}
 
 },50);
 
+/* final small burst instead of huge lag */
+spawnParticles(300);
+
 }
 
-/* INIT */
+/* =========================
+📲 INIT
+========================= */
+
 showScreen(0);
